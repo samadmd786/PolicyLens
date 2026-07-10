@@ -216,3 +216,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# PolicyLens
+.DS_Store
+.venv/
+# Lambda build artifact (regenerate with scripts/package_lambda.sh)
+policylens-lambda.zip
+*.zip
+# fetch_policies.py exports contain real account ARNs — never commit
+policylens-policies.json
+*-policies.json
+# local AWS config, just in case
+.aws/
+
+# stray aws invoke/curl output
+response.json

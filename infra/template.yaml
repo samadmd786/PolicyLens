@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  PolicyLens backend. A Lambda that runs the deterministic checks plus one
+  Amazon Bedrock (Nova Micro) reasoning call, exposed via a public Function URL.
+  The frontend is deployed separately to Amplify by scripts/deploy.sh.
+
+Parameters:
+  LambdaS3Bucket:
+    Type: String
+    Description: S3 bucket holding the packaged Lambda zip.
+  LambdaS3Key:
+    Type: String
+    Description: S3 key of the packaged Lambda zip.
+  ModelId:
+    Type: String
+    Default: us.amazon.nova-micro-v1:0
+    Description: Bedrock model (inference profile) id used for the reasoning pass.
+
+Resources:
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: InvokeNovaMicro
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Sid: InvokeNovaMicro
+                Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:InvokeModelWithResponseStream
+                Resource:
+                  - !Sub "arn:aws:bedrock:*:${AWS::AccountId}:inference-profile/us.amazon.nova-micro-v1:0"
+                  - "arn:aws:bedrock:*::foundation-model/amazon.nova-micro-v1:0"
+
+  PolicyLensFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: policylens
+      Runtime: python3.12
+      Handler: backend.handler.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      MemorySize: 256
+      Timeout: 30
+      Code:
+        S3Bucket: !Ref LambdaS3Bucket
+        S3Key: !Ref LambdaS3Key
+      Environment:
+        Variables:
+          POLICYLENS_MODEL_ID: !Ref ModelId
+
+  PolicyLensHttpApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: policylens-api
+      ProtocolType: HTTP
+      CorsConfiguration:
+        AllowHeaders:
+          - content-type
+        AllowMethods:
+          - POST
+          - OPTIONS
+        AllowOrigins:
+          - "*"
+
+  PolicyLensHttpApiIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref PolicyLensHttpApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !GetAtt PolicyLensFunction.Arn
+      PayloadFormatVersion: "2.0"
+
+  PolicyLensHttpApiRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref PolicyLensHttpApi
+      RouteKey: "POST /"
+      Target: !Sub "integrations/${PolicyLensHttpApiIntegration}"
+
+  PolicyLensHttpApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref PolicyLensHttpApi
+      StageName: "$default"
+      AutoDeploy: true
+
+  PublicInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PolicyLensFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${PolicyLensHttpApi}/*"
+
+Outputs:
+  ApiUrl:
+    Description: API Gateway Endpoint URL.
+    Value: !Sub "https://${PolicyLensHttpApi}.execute-api.${AWS::Region}.amazonaws.com/"
+  FunctionName:
+    Description: Lambda function name.
+    Value: !Ref PolicyLensFunction

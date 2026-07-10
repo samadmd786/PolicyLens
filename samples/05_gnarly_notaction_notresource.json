@@ -1,0 +1,32 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowAllExceptBilling",
+      "Effect": "Allow",
+      "NotAction": [
+        "aws-portal:*",
+        "budgets:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "AllExceptProd",
+      "Effect": "Allow",
+      "Action": "ec2:*",
+      "NotResource": [
+        "arn:aws:ec2:us-east-1:123456789012:instance/i-prod0000000000000"
+      ]
+    },
+    {
+      "Sid": "SelfEscalate",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachUserPolicy",
+        "iam:PutUserPolicy",
+        "iam:CreatePolicyVersion"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

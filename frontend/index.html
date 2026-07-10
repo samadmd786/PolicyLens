@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PolicyLens — AI IAM policy reviewer</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="wrap">
+      <header class="hero">
+        <h1>PolicyLens</h1>
+        <p>
+          Paste an AWS IAM policy and get ranked security findings in plain
+          English, plus a least-privilege rewrite.
+        </p>
+      </header>
+
+      <!-- Step 1: try a sample (one click = instant result) -->
+      <div class="step-label">Try an example (one click)</div>
+      <div id="samples" class="samples"></div>
+
+      <!-- Step 2: or paste your own -->
+      <div class="step-label">Or paste your policy JSON</div>
+      <textarea
+        id="policy-input"
+        spellcheck="false"
+        placeholder='{ "Version": "2012-10-17", "Statement": [ ... ] }'
+      ></textarea>
+
+      <div class="controls">
+        <button id="analyze-btn" class="primary">Analyze policy</button>
+        <label class="upload-link">
+          upload a .json file
+          <input id="file-input" type="file" accept=".json,application/json" />
+        </label>
+        <span id="status" class="status"></span>
+      </div>
+
+      <!-- Multi-policy picker, only shown for a fetch_policies.py export -->
+      <div id="policy-list" class="policy-list" hidden></div>
+
+      <!-- Results -->
+      <section id="results" class="results" hidden>
+        <div id="summary" class="summary"></div>
+
+        <h2 id="findings-title">Findings</h2>
+        <div id="findings" class="findings"></div>
+
+        <div id="rewrite-block" hidden>
+          <h2>Least-privilege rewrite</h2>
+          <p class="caption">
+            Wildcards are scoped and conditions added. Where the original used
+            <code>*</code>, the rewrite inserts placeholder ARNs — swap in your
+            real resource names.
+          </p>
+          <div class="diff">
+            <div class="diff-col">
+              <div class="diff-head">Original</div>
+              <pre id="diff-original"></pre>
+            </div>
+            <div class="diff-col">
+              <div class="diff-head">Rewritten (least privilege)</div>
+              <pre id="diff-rewritten"></pre>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <p class="privacy">
+        No credentials, ever. Nothing is stored or logged beyond the single
+        analysis call. To review a real account, run
+        <code>scripts/fetch_policies.py</code> locally and upload the export.
+      </p>
+    </main>
+
+    <script src="config.js"></script>
+    <script src="samples.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
