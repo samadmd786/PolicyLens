@@ -6,6 +6,8 @@ version shown side by side with the original.
 
 Built for the AWS Builder Center Weekend Productivity Challenge.
 
+**Live demo:** https://main.d2k0p29miy8scd.amplifyapp.com/
+
 ## How it works
 
 Deterministic first, AI second.
@@ -77,7 +79,8 @@ teardown.
 backend/     Layer 1 checks, Layer 2 Bedrock client, Lambda handler
 frontend/    Static single-page app (paste, upload, sample gallery, diff view)
 samples/     Example IAM policies (clean, messy, gnarly, malformed)
-scripts/     CLI scanner, local IAM export, dev server, Lambda packaging
+scripts/     CLI scanner, local IAM export, dev server, deploy + teardown
+infra/       CloudFormation template (API Gateway + Lambda)
 tests/       pytest suite (rule engine, Bedrock validator, fetch_policies)
 docs/        Deploy guide, frontend checklist, IAM policies
 ```
